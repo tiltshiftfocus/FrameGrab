@@ -4,7 +4,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,9 +24,8 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,39 +45,29 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.imjerry.framegrab.R
+import me.imjerry.framegrab.ui.VideoViewModel
 import java.io.File
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun SelectFrameScreen(
-    player: ExoPlayer,
-    videoUri: Uri,
+    viewModel: VideoViewModel,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
 
-    var videoDuration by remember { mutableLongStateOf(0L) }
-
-    var sliderPosition by remember { mutableFloatStateOf(0f) }
-
-    var isVideoPlaying by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        val mm = MediaMetadataRetriever()
-        mm.setDataSource(context, videoUri)
-        videoDuration =
-            mm.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-                ?.toLong() ?: "0".toLong()
-        sliderPosition = 0f
-    }
+    val player = viewModel.player.collectAsState()
+    val videoUri = viewModel.currentUri.collectAsState()
+    val videoDuration = viewModel.videoDuration.collectAsState()
+    val sliderPosition = viewModel.sliderPosition.collectAsState()
+    val isVideoPlaying = viewModel.isPlaying.collectAsState()
 
     fun shareImage(imagePath: String) {
         val uri = FileProvider.getUriForFile(
             context,
-            "${context.packageName}.providers.MyFileProvider",
+            "${context.packageName}.data.providers.MyFileProvider",
             File(imagePath)
         )
-//        context.grantUriPermission(context.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         val sendIntent = Intent().apply {
             action = Intent.ACTION_SEND
             putExtra(Intent.EXTRA_STREAM, uri)
@@ -90,12 +78,13 @@ fun SelectFrameScreen(
     }
 
     fun onShare() {
+        // TODO: use better filename
         val fileName = "frame_${System.currentTimeMillis()}.png"
         try {
             val mm = MediaMetadataRetriever()
-            mm.setDataSource(context, videoUri)
+            mm.setDataSource(context, videoUri.value)
             mm.getFrameAtTime(
-                ((sliderPosition * videoDuration) * 1000L).toLong(),
+                ((sliderPosition.value * videoDuration.value) * 1000L).toLong(),
                 MediaMetadataRetriever.OPTION_CLOSEST
             )?.let { bitmap ->
                 val dir = context.externalCacheDir
@@ -113,10 +102,6 @@ fun SelectFrameScreen(
         }
     }
 
-//    fun updateSlider(position: Float) {
-//        sliderPosition = (position / videoDuration)
-//    }
-
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -125,32 +110,23 @@ fun SelectFrameScreen(
             Modifier
                 .weight(.3f)
                 .padding(top = 12.dp)) {
-//            ExoPlayerWrapperLocal(
-//                uri = videoUri,
-//                seekPosition = sliderPosition,
-//                isVideoPlaying = isVideoPlaying,
-//                updateSlider = { value -> updateSlider(value) },
-//                onPlayStateChange = { state -> isVideoPlaying = state }
-//            )
-            ExoPlayerWrapper(exoPlayer = player)
+            ExoPlayerWrapper(viewModel = viewModel)
         }
         Column() {
             Slider(
                 modifier = Modifier
                     .padding(start = 32.dp, end = 32.dp)
                     .pointerInput(Unit) {
-                        detectTapGestures {
-                            isVideoPlaying = false
-                        }
+
                     },
-                value = sliderPosition,
+                value = sliderPosition.value,
                 colors = SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.secondary,
                     activeTrackColor = MaterialTheme.colorScheme.secondary,
                     inactiveTrackColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
                 onValueChange = { newSliderVal ->
-                    sliderPosition = newSliderVal
+                    viewModel.setSliderPosition(newSliderVal, isManualSeek = true)
                 }
             )
             Row(
@@ -160,9 +136,11 @@ fun SelectFrameScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
             ) {
-                IconButton(onClick = { isVideoPlaying = !isVideoPlaying }) {
+                IconButton(onClick = {
+                    viewModel.setPlayState(!isVideoPlaying.value)
+                }) {
                     Icon(
-                        if (!isVideoPlaying) Icons.Default.PlayArrow else Icons.Default.Pause,
+                        if (!isVideoPlaying.value) Icons.Default.PlayArrow else Icons.Default.Pause,
                         contentDescription = stringResource(R.string.play_pause)
                     )
                 }
@@ -176,15 +154,26 @@ fun SelectFrameScreen(
 
 @Composable
 private fun ExoPlayerWrapper(
-    exoPlayer: ExoPlayer
+    viewModel: VideoViewModel
 ) {
+
     var playerView by remember { mutableStateOf<PlayerView?>(null) }
     val context = LocalContext.current
 
+    val exoPlayer = viewModel.player.collectAsState().value!!
+    val isPlaying = viewModel.isPlaying.collectAsState().value
+
+    if (isPlaying) {
+        LaunchedEffect(Unit) {
+            while (true) {
+                viewModel.setSliderPosition(exoPlayer.currentPosition.toFloat() / viewModel.videoDuration.value)
+                delay(1.seconds / 30)
+            }
+        }
+    }
+
     AndroidView(
-        modifier = Modifier
-            .fillMaxSize()
-            .wrapContentSize(),
+
         factory = {
             PlayerView(context).apply {
                 playerView = this
@@ -193,83 +182,4 @@ private fun ExoPlayerWrapper(
             }
         }
     )
-}
-
-@Composable
-private fun ExoPlayerWrapperLocal(
-    uri: Uri,
-    seekPosition: Float,
-    isVideoPlaying: Boolean,
-    updateSlider: (Float) -> Unit,
-    onPlayStateChange: (Boolean) -> Unit
-) {
-    val context = LocalContext.current
-
-    val exoPlayer = remember(context) {
-        ExoPlayer.Builder(context)
-            .build()
-            .also { exoPlayer ->
-                exoPlayer.setMediaItem(MediaItem.fromUri(uri))
-                exoPlayer.prepare()
-                exoPlayer.playWhenReady = false
-                exoPlayer.volume = 0f
-            }
-    }
-
-    var playerView by remember { mutableStateOf<PlayerView?>(null) }
-
-    if (isVideoPlaying) {
-        LaunchedEffect(Unit) {
-            while (true) {
-                updateSlider(exoPlayer.currentPosition.toFloat())
-                delay(1.seconds / 30)
-            }
-        }
-    }
-
-    LaunchedEffect(isVideoPlaying) {
-        if (isVideoPlaying) {
-            exoPlayer.play()
-        } else {
-            exoPlayer.pause()
-        }
-    }
-
-    LaunchedEffect(seekPosition) {
-        if (!isVideoPlaying) {
-            exoPlayer.seekTo((seekPosition * exoPlayer.duration).toLong())
-
-        }
-    }
-
-    DisposableEffect(
-        Unit
-    ) {
-        val listener = object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == ExoPlayer.STATE_ENDED) {
-                    onPlayStateChange(false)
-                }
-            }
-        }
-        exoPlayer.addListener(listener)
-        onDispose {
-            exoPlayer.removeListener(listener)
-            exoPlayer.release()
-        }
-    }
-
-    AndroidView(
-        modifier = Modifier
-            .fillMaxSize()
-            .wrapContentSize(),
-        factory = {
-            PlayerView(context).apply {
-                playerView = this
-                player = exoPlayer
-                this.useController = false
-            }
-        })
-
-
 }
