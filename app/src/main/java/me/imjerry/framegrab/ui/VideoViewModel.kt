@@ -79,6 +79,7 @@ class VideoViewModel: ViewModel() {
     }
 
     private fun reset() {
+        _player.value!!.removeListener(playerListener)
         _player.value!!.release()
         _sliderPosition.update { 0f }
         _isPlaying.update { false }
