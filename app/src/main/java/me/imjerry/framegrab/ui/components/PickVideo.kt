@@ -14,10 +14,9 @@ import androidx.compose.runtime.remember
 fun PickVideo(
     onPickVideo: (Uri) -> Unit
 ) {
-//    val result = remember { mutableStateOf<Uri?>(null) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) {
-//        result.value = it
-        onPickVideo(it!!)
+        if (it != null)
+            onPickVideo(it)
     }
 
     Button(
@@ -29,9 +28,4 @@ fun PickVideo(
     ) {
         Text(text = "Select Video")
     }
-
-//    result.value?.let { videoUri ->
-////        Text(text = "Video Path ${image.path.toString()}")
-//        onPickVideo(videoUri)
-//    }
 }

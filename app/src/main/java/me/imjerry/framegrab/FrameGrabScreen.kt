@@ -1,10 +1,6 @@
 package me.imjerry.framegrab
 
-import android.app.Application
-import android.net.Uri
-import android.os.Bundle
 import androidx.annotation.StringRes
-import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -22,9 +18,6 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -35,8 +28,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.flow.first
+import me.imjerry.framegrab.ui.AppViewModel
 import me.imjerry.framegrab.ui.VideoViewModel
+import me.imjerry.framegrab.ui.components.LoadingBox
 import me.imjerry.framegrab.ui.screens.SelectFrameScreen
 import me.imjerry.framegrab.ui.screens.SelectVideoScreen
 
@@ -77,6 +71,7 @@ fun FrameGrabAppBar(
 
 @Composable
 fun FrameGrabApp(
+    appViewModel: AppViewModel = viewModel(),
     viewModel: VideoViewModel = viewModel(),
     navController: NavHostController = rememberNavController()
 ) {
@@ -87,53 +82,51 @@ fun FrameGrabApp(
     )
     val context = LocalContext.current
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Scaffold(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = {
-                FrameGrabAppBar(
-                    canNavigateBack = navController.previousBackStackEntry != null,
-                    scrollBehavior = scrollBehavior,
-                    currentScreen = currentScreen,
-                    navigateUp = { navController.navigateUp() }
-                )
-            }
-        ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = FrameGrabScreen.Start.name,
-                modifier = Modifier.padding(innerPadding),
-                exitTransition = { ExitTransition.None },
-            ) {
-                composable(route = FrameGrabScreen.Start.name) {
-                    SelectVideoScreen(
-                        onVideoPicked = { uri ->
-                            viewModel.setUri(context, uri)
-                            navController.navigate(FrameGrabScreen.SelectFrame.name)
-                        },
-                        modifier = Modifier.fillMaxSize()
+    LoadingBox(appViewModel = appViewModel) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Scaffold(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+                topBar = {
+                    FrameGrabAppBar(
+                        canNavigateBack = navController.previousBackStackEntry != null,
+                        scrollBehavior = scrollBehavior,
+                        currentScreen = currentScreen,
+                        navigateUp = { navController.navigateUp() }
                     )
                 }
-                composable(route = FrameGrabScreen.SelectFrame.name) {
-                    val currentUri = viewModel.currentUri.collectAsState()
-                    if (currentUri.value != null) {
-                        SelectFrameScreen(
-                            viewModel = viewModel,
+            ) { innerPadding ->
+                NavHost(
+                    navController = navController,
+                    startDestination = FrameGrabScreen.Start.name,
+                    modifier = Modifier.padding(innerPadding),
+                    exitTransition = { ExitTransition.None },
+                ) {
+                    composable(route = FrameGrabScreen.Start.name) {
+                        SelectVideoScreen(
+                            onVideoPicked = { uri ->
+                                viewModel.setUri(context, uri)
+                                navController.navigate(FrameGrabScreen.SelectFrame.name)
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
+                    }
+                    composable(route = FrameGrabScreen.SelectFrame.name) {
+                        val currentUri = viewModel.currentUri.collectAsState()
+                        if (currentUri.value != null) {
+                            SelectFrameScreen(
+                                appViewModel = appViewModel,
+                                videoViewModel = viewModel,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             }
         }
-
     }
-}
-
-private fun cancel(navController: NavHostController) {
-    navController.popBackStack(FrameGrabScreen.Start.name, inclusive = false)
 }
