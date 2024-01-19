@@ -8,9 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -51,9 +49,6 @@ fun FrameGrabAppBar(
 ) {
     TopAppBar(
         title = { Text(stringResource(currentScreen.title)) },
-        colors = TopAppBarDefaults.mediumTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
         scrollBehavior = scrollBehavior,
         modifier = modifier,
         navigationIcon = {
@@ -83,47 +78,42 @@ fun FrameGrabApp(
     val context = LocalContext.current
 
     LoadingBox(appViewModel = appViewModel) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            Scaffold(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                topBar = {
-                    FrameGrabAppBar(
-                        canNavigateBack = navController.previousBackStackEntry != null,
-                        scrollBehavior = scrollBehavior,
-                        currentScreen = currentScreen,
-                        navigateUp = { navController.navigateUp() }
+        Scaffold(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                FrameGrabAppBar(
+                    canNavigateBack = navController.previousBackStackEntry != null,
+                    scrollBehavior = scrollBehavior,
+                    currentScreen = currentScreen,
+                    navigateUp = { navController.navigateUp() }
+                )
+            }
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = FrameGrabScreen.Start.name,
+                modifier = Modifier.padding(innerPadding),
+                exitTransition = { ExitTransition.None },
+            ) {
+                composable(route = FrameGrabScreen.Start.name) {
+                    SelectVideoScreen(
+                        onVideoPicked = { uri ->
+                            viewModel.setUri(context, uri)
+                            navController.navigate(FrameGrabScreen.SelectFrame.name)
+                        },
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
-            ) { innerPadding ->
-                NavHost(
-                    navController = navController,
-                    startDestination = FrameGrabScreen.Start.name,
-                    modifier = Modifier.padding(innerPadding),
-                    exitTransition = { ExitTransition.None },
-                ) {
-                    composable(route = FrameGrabScreen.Start.name) {
-                        SelectVideoScreen(
-                            onVideoPicked = { uri ->
-                                viewModel.setUri(context, uri)
-                                navController.navigate(FrameGrabScreen.SelectFrame.name)
-                            },
+                composable(route = FrameGrabScreen.SelectFrame.name) {
+                    val currentUri = viewModel.currentUri.collectAsState()
+                    if (currentUri.value != null) {
+                        SelectFrameScreen(
+                            appViewModel = appViewModel,
+                            videoViewModel = viewModel,
                             modifier = Modifier.fillMaxSize()
                         )
-                    }
-                    composable(route = FrameGrabScreen.SelectFrame.name) {
-                        val currentUri = viewModel.currentUri.collectAsState()
-                        if (currentUri.value != null) {
-                            SelectFrameScreen(
-                                appViewModel = appViewModel,
-                                videoViewModel = viewModel,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
                     }
                 }
             }

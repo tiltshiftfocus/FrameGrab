@@ -3,11 +3,6 @@ package me.imjerry.framegrab.ui.screens
 import android.content.Intent
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,9 +37,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.FileProvider
 import androidx.media3.ui.PlayerView
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.imjerry.framegrab.R
@@ -58,7 +53,8 @@ import kotlin.time.Duration.Companion.seconds
 fun SelectFrameScreen(
     appViewModel: AppViewModel,
     videoViewModel: VideoViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     val context = LocalContext.current
 
@@ -103,7 +99,7 @@ fun SelectFrameScreen(
     fun handleOnShare() {
         videoViewModel.setPlayState(false)
         appViewModel.setIsLoading(true)
-        CoroutineScope(Dispatchers.Default).launch { onShare() }
+        CoroutineScope(dispatcher).launch { onShare() }
     }
     Column(
         modifier = modifier,
@@ -111,52 +107,57 @@ fun SelectFrameScreen(
     ) {
         Box(
             Modifier
-                .padding(top = 12.dp)
+                .padding(top = 12.dp, bottom = 12.dp)
                 .weight(0.3f)
         ) {
             ExoPlayerWrapper(viewModel = videoViewModel)
         }
-        Column() {
-            Slider(
-                modifier = Modifier
-                    .padding(start = 32.dp, end = 32.dp)
-                    .pointerInput(Unit) {
+        Surface(
+            color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.1f),
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            Column() {
+                Slider(
+                    modifier = Modifier
+                        .padding(start = 32.dp, end = 32.dp)
+                        .pointerInput(Unit) {
 
-                    },
-                value = sliderPosition,
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.secondary,
-                    activeTrackColor = MaterialTheme.colorScheme.secondary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.secondaryContainer,
-                ),
-                onValueChange = { newSliderVal ->
-                    videoViewModel.setSliderPosition(newSliderVal, isManualSeek = true)
-                }
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-
-            ) {
-                Box {
-                    IconButton(onClick = {
-                        videoViewModel.setPlayState(!isVideoPlaying)
-                    }) {
-                        Icon(
-                            if (!isVideoPlaying) Icons.Default.PlayArrow else Icons.Default.Pause,
-                            contentDescription = stringResource(R.string.play_pause)
-                        )
+                        },
+                    value = sliderPosition,
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.secondary,
+                        activeTrackColor = MaterialTheme.colorScheme.secondary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.inverseSurface,
+                    ),
+                    onValueChange = { newSliderVal ->
+                        videoViewModel.setSliderPosition(newSliderVal, isManualSeek = true)
                     }
-                }
-                IconButtonBackground(
-                    icon = Icons.Default.Share,
-                    contentDescription = stringResource(R.string.export),
-                    tintColor = Color.Red
-                ) {
-                    handleOnShare()
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+
+                    ) {
+                    Box {
+                        IconButton(onClick = {
+                            videoViewModel.setPlayState(!isVideoPlaying)
+                        }) {
+                            Icon(
+                                if (!isVideoPlaying) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                contentDescription = stringResource(R.string.play_pause)
+                            )
+                        }
+                    }
+                    IconButtonBackground(
+                        icon = Icons.Default.Share,
+                        contentDescription = stringResource(R.string.export),
+                        tintColor = Color.Red
+                    ) {
+                        handleOnShare()
+                    }
                 }
             }
         }
