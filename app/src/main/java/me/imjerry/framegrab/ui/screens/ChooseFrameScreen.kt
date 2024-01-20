@@ -69,22 +69,18 @@ fun SelectFrameScreen(
 ) {
     val context = LocalContext.current
 
-    val player = videoViewModel.player.collectAsState().value
-    val videoUri = videoViewModel.currentUri.collectAsState().value!!
-    val videoDuration = videoViewModel.videoDuration.collectAsState().value
-    val sliderPosition = videoViewModel.sliderPosition.collectAsState().value
-    val isVideoPlaying = videoViewModel.isPlaying.collectAsState().value
+    val videoUri = videoViewModel.currentUri.collectAsState()
+    val isVideoPlaying = videoViewModel.isPlaying.collectAsState()
+    val sliderPosition = videoViewModel.sliderPosition.collectAsState()
 
     var isControlShown by remember { mutableStateOf(false) }
-
     ComposableLifecycle(
         onPause = {
-            if (isVideoPlaying) {
+            if (isVideoPlaying.value) {
                 videoViewModel.setPlayState(false)
             }
         }
     )
-
 
     fun shareImage(imagePath: String) {
         val uri = FileProvider.getUriForFile(
@@ -102,29 +98,25 @@ fun SelectFrameScreen(
     }
 
     fun onShare() {
-        try {
-            val mm = MediaMetadataRetriever()
-            mm.setDataSource(context, videoUri)
-            mm.getFrameAtTime(
-                player!!.currentPosition.toLong(),
-                MediaMetadataRetriever.OPTION_CLOSEST_SYNC
-            )?.let { bitmap ->
-                val fileName = "${context.getString(R.string.app_name)}_${System.currentTimeMillis()}.png"
-                val dir = context.externalCacheDir
-                val fullPath = "$dir/$fileName"
-                val outputStream = File(fullPath).outputStream()
-                bitmap.compress(Bitmap.CompressFormat.PNG, 32, outputStream)
-                appViewModel.setIsLoading(false)
-                shareImage(fullPath)
-                mm.release()
-            }
-        } catch (e: Exception) {
+        val mm = MediaMetadataRetriever()
+        mm.setDataSource(context, videoUri.value)
+        mm.getFrameAtTime(
+            (sliderPosition.value * 1000).toLong(),
+            MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+        )?.let { bitmap ->
+            val fileName = "${context.getString(R.string.app_name)}_${System.currentTimeMillis()}.png"
+            val dir = context.externalCacheDir
+            val fullPath = "$dir/$fileName"
+            val outputStream = File(fullPath).outputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 32, outputStream)
             appViewModel.setIsLoading(false)
+            shareImage(fullPath)
+            mm.release()
         }
     }
 
     fun handleOnShare() {
-        if (isVideoPlaying) {
+        if (isVideoPlaying.value) {
             videoViewModel.setPlayState(false)
         }
         appViewModel.setIsLoading(true)
@@ -156,9 +148,7 @@ fun SelectFrameScreen(
                 enter = slideInVertically { 3000 }
             ) {
                 ChooseFrameControls(
-                    videoViewModel = videoViewModel,
-                    sliderPosition = sliderPosition,
-                    isVideoPlaying = isVideoPlaying
+                    videoViewModel = videoViewModel
                 ) { handleOnShare() }
             }
         }
@@ -168,10 +158,13 @@ fun SelectFrameScreen(
 @Composable
 private fun ChooseFrameControls(
     videoViewModel: VideoViewModel = viewModel(),
-    sliderPosition: Float = 0f,
-    isVideoPlaying: Boolean = false,
     handleOnShare: () -> Unit = { }
 ) {
+
+    val isVideoPlaying = videoViewModel.isPlaying.collectAsState()
+    val sliderPosition = videoViewModel.sliderPosition.collectAsState()
+    val videoDuration = videoViewModel.videoDuration.collectAsState()
+
     Column {
         Slider(
             modifier = Modifier
@@ -179,7 +172,7 @@ private fun ChooseFrameControls(
                 .pointerInput(Unit) {
 
                 },
-            value = sliderPosition,
+            value = sliderPosition.value,
             colors = SliderDefaults.colors(
                 thumbColor = colorScheme.secondary,
                 activeTrackColor = colorScheme.secondary,
@@ -187,7 +180,8 @@ private fun ChooseFrameControls(
             ),
             onValueChange = { newSliderVal ->
                 videoViewModel.setSliderPosition(newSliderVal, isManualSeek = true)
-            }
+            },
+            valueRange = 0f..(videoDuration.value).toFloat()
         )
         Row(
             modifier = Modifier
@@ -199,10 +193,10 @@ private fun ChooseFrameControls(
             ) {
             Box {
                 IconButton(onClick = {
-                    videoViewModel.setPlayState(!isVideoPlaying)
+                    videoViewModel.setPlayState(!isVideoPlaying.value)
                 }) {
                     Icon(
-                        if (!isVideoPlaying) Icons.Default.PlayArrow else Icons.Default.Pause,
+                        if (!isVideoPlaying.value) Icons.Default.PlayArrow else Icons.Default.Pause,
                         contentDescription = stringResource(R.string.play_pause)
                     )
                 }
@@ -228,7 +222,7 @@ private fun PlayerWrapper(
     if (isPlaying && videoPlayer != null) {
         LaunchedEffect(Unit) {
             while (true) {
-                videoViewModel.setSliderPosition(videoPlayer.currentPosition.toFloat() / videoViewModel.videoDuration.value)
+                videoViewModel.setSliderPosition(videoPlayer.currentPosition.toFloat())
                 delay(1.seconds / 30)
             }
         }

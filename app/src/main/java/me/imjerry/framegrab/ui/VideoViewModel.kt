@@ -74,7 +74,7 @@ class VideoViewModel: ViewModel() {
                 this.setOnPreparedListener { mediaPlayer ->
                     setVideoDuration(mediaPlayer.duration)
                     mediaPlayer.setVolume(0f, 0f)
-                    mediaPlayer.seekTo((_sliderPosition.value * _videoDuration.value).toLong(), MediaPlayer.SEEK_CLOSEST)
+                    mediaPlayer.seekTo(sliderPosition.value.toLong(), MediaPlayer.SEEK_CLOSEST_SYNC)
                     _player.value = mediaPlayer
                 }
                 this.setOnCompletionListener {
@@ -88,7 +88,7 @@ class VideoViewModel: ViewModel() {
         _sliderPosition.update { position }
         if (isManualSeek) {
 //            _player.value!!.seekTo((position * _videoDuration.value).toLong())
-            _player.value!!.seekTo((position * _videoDuration.value).toLong(), MediaPlayer.SEEK_CLOSEST)
+            _player.value!!.seekTo(position.toLong(), MediaPlayer.SEEK_CLOSEST)
         }
     }
 
