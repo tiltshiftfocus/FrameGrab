@@ -92,8 +92,7 @@ fun SelectFrameScreen(
     }
 
     fun onShare() {
-        // TODO: use better filename
-        val fileName = "${R.string.app_name}_${System.currentTimeMillis()}.png"
+        val fileName = "${context.getString(R.string.app_name)}_${System.currentTimeMillis()}.png"
         val mm = MediaMetadataRetriever()
         mm.setDataSource(context, videoUri)
         mm.getFrameAtTime(
