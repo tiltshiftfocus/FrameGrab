@@ -63,7 +63,6 @@ fun SelectFrameScreen(
     modifier: Modifier = Modifier,
     dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    val view = LocalView.current
     val context = LocalContext.current
 
     val videoUri = videoViewModel.currentUri.collectAsState().value!!
@@ -72,9 +71,6 @@ fun SelectFrameScreen(
     val isVideoPlaying = videoViewModel.isPlaying.collectAsState().value
 
     var isControlShown by remember { mutableStateOf(false) }
-
-    val window = (view.context as Activity).window
-    window.navigationBarColor = colorScheme.inverseSurface.copy(alpha = 0.1f).toArgb()
 
     fun shareImage(imagePath: String) {
         val uri = FileProvider.getUriForFile(
