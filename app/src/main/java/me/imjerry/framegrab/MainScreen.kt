@@ -1,5 +1,6 @@
 package me.imjerry.framegrab
 
+import android.app.Activity
 import androidx.annotation.StringRes
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,18 +9,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -35,7 +41,16 @@ import me.imjerry.framegrab.ui.screens.SelectVideoScreen
 enum class FrameGrabScreen(@StringRes var title: Int) {
     Start(title = R.string.app_name),
     SelectFrame(title = R.string.choose_frame),
-    PreviewExport(title = R.string.preview_export)
+    PreviewExport(title = R.string.preview_export);
+
+    val navBarColor: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = when(this) {
+            Start -> MaterialTheme.colorScheme.surface
+            SelectFrame -> MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.1f)
+            else -> { MaterialTheme.colorScheme.surface }
+        }
 }
 
 
@@ -76,6 +91,7 @@ fun FrameGrabApp(
         backStackEntry?.destination?.route ?: FrameGrabScreen.Start.name
     )
     val context = LocalContext.current
+    val view = LocalView.current
 
     LoadingBox(appViewModel = appViewModel) {
         Scaffold(
@@ -97,7 +113,9 @@ fun FrameGrabApp(
                 modifier = Modifier.padding(innerPadding),
                 exitTransition = { ExitTransition.None },
             ) {
+                val window = (view.context as Activity).window
                 composable(route = FrameGrabScreen.Start.name) {
+                    window.navigationBarColor = currentScreen.navBarColor.toArgb()
                     SelectVideoScreen(
                         onVideoPicked = { uri ->
                             viewModel.setUri(context, uri)
@@ -107,6 +125,7 @@ fun FrameGrabApp(
                     )
                 }
                 composable(route = FrameGrabScreen.SelectFrame.name) {
+                    window.navigationBarColor = currentScreen.navBarColor.toArgb()
                     val currentUri = viewModel.currentUri.collectAsState()
                     if (currentUri.value != null) {
                         SelectFrameScreen(

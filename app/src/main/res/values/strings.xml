@@ -4,6 +4,7 @@
     <string name="choose_frame">Choose Frame</string>
     <string name="preview_export">Preview &amp; Export</string>
 
+    <string name="pick_video">Pick a video</string>
     <string name="back_button">Back</string>
     <string name="play_pause">Play/Pause</string>
     <string name="export">Export</string>

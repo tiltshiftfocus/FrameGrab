@@ -1,8 +1,11 @@
 package me.imjerry.framegrab.ui.screens
 
+import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +19,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -30,12 +33,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.FileProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -56,12 +63,18 @@ fun SelectFrameScreen(
     modifier: Modifier = Modifier,
     dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
+    val view = LocalView.current
     val context = LocalContext.current
 
     val videoUri = videoViewModel.currentUri.collectAsState().value!!
     val videoDuration = videoViewModel.videoDuration.collectAsState().value
     val sliderPosition = videoViewModel.sliderPosition.collectAsState().value
     val isVideoPlaying = videoViewModel.isPlaying.collectAsState().value
+
+    var isControlShown by remember { mutableStateOf(false) }
+
+    val window = (view.context as Activity).window
+    window.navigationBarColor = colorScheme.inverseSurface.copy(alpha = 0.1f).toArgb()
 
     fun shareImage(imagePath: String) {
         val uri = FileProvider.getUriForFile(
@@ -80,7 +93,7 @@ fun SelectFrameScreen(
 
     fun onShare() {
         // TODO: use better filename
-        val fileName = "frame_${System.currentTimeMillis()}.png"
+        val fileName = "${R.string.app_name}_${System.currentTimeMillis()}.png"
         val mm = MediaMetadataRetriever()
         mm.setDataSource(context, videoUri)
         mm.getFrameAtTime(
@@ -101,6 +114,12 @@ fun SelectFrameScreen(
         appViewModel.setIsLoading(true)
         CoroutineScope(dispatcher).launch { onShare() }
     }
+
+    LaunchedEffect(Unit) {
+//        delay(300)
+        isControlShown = true
+    }
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -113,52 +132,71 @@ fun SelectFrameScreen(
             ExoPlayerWrapper(viewModel = videoViewModel)
         }
         Surface(
-            color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.1f),
+            color = colorScheme.inverseSurface.copy(alpha = 0.1f),
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         ) {
-            Column() {
-                Slider(
-                    modifier = Modifier
-                        .padding(start = 32.dp, end = 32.dp)
-                        .pointerInput(Unit) {
+            AnimatedVisibility(
+                visible = isControlShown,
+                enter = slideInVertically { 10000 }
+            ) {
+                ChooseFrameControls(
+                    videoViewModel = videoViewModel,
+                    sliderPosition = sliderPosition,
+                    isVideoPlaying = isVideoPlaying
+                ) { handleOnShare() }
+            }
+        }
+    }
+}
 
-                        },
-                    value = sliderPosition,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.secondary,
-                        activeTrackColor = MaterialTheme.colorScheme.secondary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.inverseSurface,
-                    ),
-                    onValueChange = { newSliderVal ->
-                        videoViewModel.setSliderPosition(newSliderVal, isManualSeek = true)
-                    }
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
+@Composable
+private fun ChooseFrameControls(
+    videoViewModel: VideoViewModel = viewModel(),
+    sliderPosition: Float = 0f,
+    isVideoPlaying: Boolean = false,
+    handleOnShare: () -> Unit = { }
+) {
+    Column {
+        Slider(
+            modifier = Modifier
+                .padding(start = 32.dp, end = 32.dp)
+                .pointerInput(Unit) {
 
-                    ) {
-                    Box {
-                        IconButton(onClick = {
-                            videoViewModel.setPlayState(!isVideoPlaying)
-                        }) {
-                            Icon(
-                                if (!isVideoPlaying) Icons.Default.PlayArrow else Icons.Default.Pause,
-                                contentDescription = stringResource(R.string.play_pause)
-                            )
-                        }
-                    }
-                    IconButtonBackground(
-                        icon = Icons.Default.Share,
-                        contentDescription = stringResource(R.string.export),
-                        tintColor = Color.Red
-                    ) {
-                        handleOnShare()
-                    }
+                },
+            value = sliderPosition,
+            colors = SliderDefaults.colors(
+                thumbColor = colorScheme.secondary,
+                activeTrackColor = colorScheme.secondary,
+                inactiveTrackColor = colorScheme.inverseSurface,
+            ),
+            onValueChange = { newSliderVal ->
+                videoViewModel.setSliderPosition(newSliderVal, isManualSeek = true)
+            }
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+
+            ) {
+            Box {
+                IconButton(onClick = {
+                    videoViewModel.setPlayState(!isVideoPlaying)
+                }) {
+                    Icon(
+                        if (!isVideoPlaying) Icons.Default.PlayArrow else Icons.Default.Pause,
+                        contentDescription = stringResource(R.string.play_pause)
+                    )
                 }
+            }
+            IconButtonBackground(
+                icon = Icons.Default.Share,
+                contentDescription = stringResource(R.string.export),
+                tintColor = Color.Red
+            ) {
+                handleOnShare()
             }
         }
     }
@@ -199,4 +237,16 @@ private fun ExoPlayerWrapper(
         }
     )
 
+}
+
+@Preview
+@Composable
+fun ChooseFrameControlsPreview() {
+
+    AnimatedVisibility(
+        visible = false,
+        enter = slideInVertically { 3000 }
+    ) {
+        ChooseFrameControls()
+    }
 }

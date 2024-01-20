@@ -3,7 +3,6 @@ package me.imjerry.framegrab
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.ExperimentalMaterial3Api
 import me.imjerry.framegrab.ui.theme.FrameGrabTheme
 
 class MainActivity : ComponentActivity() {
