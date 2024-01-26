@@ -132,10 +132,11 @@ fun SelectFrameScreen(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
+        Column(
             Modifier
                 .padding(top = 12.dp, bottom = 12.dp)
-                .weight(0.3f)
+                .weight(0.3f),
+            verticalArrangement = Arrangement.Center
         ) {
             PlayerWrapper(videoViewModel = videoViewModel)
         }
