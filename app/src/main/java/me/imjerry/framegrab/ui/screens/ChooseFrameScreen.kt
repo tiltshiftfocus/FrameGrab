@@ -102,7 +102,7 @@ fun SelectFrameScreen(
         mm.setDataSource(context, videoUri.value)
         mm.getFrameAtTime(
             (sliderPosition.value * 1000).toLong(),
-            MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+            MediaMetadataRetriever.OPTION_CLOSEST
         )?.let { bitmap ->
             val fileName = "${context.getString(R.string.app_name)}_${System.currentTimeMillis()}.png"
             val dir = context.externalCacheDir
