@@ -3,6 +3,7 @@ package me.imjerry.framegrab
 import android.app.Activity
 import androidx.annotation.StringRes
 import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -48,7 +49,7 @@ enum class FrameGrabScreen(@StringRes var title: Int) {
         @ReadOnlyComposable
         get() = when(this) {
             Start -> MaterialTheme.colorScheme.surface
-            SelectFrame -> MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.1f)
+            SelectFrame -> (if (!isSystemInDarkTheme()) MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface)
             else -> { MaterialTheme.colorScheme.surface }
         }
 }

@@ -74,7 +74,7 @@ class VideoViewModel: ViewModel() {
                 this.setOnPreparedListener { mediaPlayer ->
                     setVideoDuration(mediaPlayer.duration)
                     mediaPlayer.setVolume(0f, 0f)
-                    mediaPlayer.seekTo(sliderPosition.value.toLong(), MediaPlayer.SEEK_CLOSEST_SYNC)
+                    mediaPlayer.seekTo(sliderPosition.value.toLong(), MediaPlayer.SEEK_CLOSEST)
                     _player.value = mediaPlayer
                 }
                 this.setOnCompletionListener {
