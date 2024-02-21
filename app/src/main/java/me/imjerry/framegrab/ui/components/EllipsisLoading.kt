@@ -29,7 +29,7 @@ import kotlinx.coroutines.delay
 fun EllipsisLoading(
     modifier: Modifier = Modifier,
     circleSize: Dp = 12.dp,
-    circleColor: Color = MaterialTheme.colorScheme.inverseSurface,
+    circleColor: Color = MaterialTheme.colorScheme.primary,
     spaceBetween: Dp = 10.dp,
     travelDistance: Dp = 12.dp
 ) {
