@@ -89,6 +89,12 @@ class VideoViewModel: ViewModel() {
         }
     }
 
+    fun shiftVideoPosition(delta: Int) {
+        val newPosition = _sliderPosition.value + delta
+        _sliderPosition.update { newPosition }
+        _player.value!!.seekTo(newPosition.toLong(), MediaPlayer.SEEK_CLOSEST)
+    }
+
     fun setPlayState(newState: Boolean) {
         _isPlaying.update { newState }
         if (newState) {

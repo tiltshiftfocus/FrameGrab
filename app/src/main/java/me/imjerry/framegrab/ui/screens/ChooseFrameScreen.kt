@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardDoubleArrowLeft
+import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
@@ -65,7 +67,7 @@ fun SelectFrameScreen(
     appViewModel: AppViewModel,
     videoViewModel: VideoViewModel,
     modifier: Modifier = Modifier,
-    dispatcher: CoroutineDispatcher = Dispatchers.Default
+    dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     val context = LocalContext.current
 
@@ -104,7 +106,8 @@ fun SelectFrameScreen(
             (sliderPosition.value * 1000).toLong(),
             MediaMetadataRetriever.OPTION_CLOSEST
         )?.let { bitmap ->
-            val fileName = "${context.getString(R.string.app_name)}_${System.currentTimeMillis()}.png"
+            val fileName =
+                "${context.getString(R.string.app_name)}_${System.currentTimeMillis()}.png"
             val dir = context.externalCacheDir
             val fullPath = "$dir/$fileName"
             val outputStream = File(fullPath).outputStream()
@@ -159,7 +162,7 @@ fun SelectFrameScreen(
 @Composable
 private fun ChooseFrameControls(
     videoViewModel: VideoViewModel = viewModel(),
-    handleOnShare: () -> Unit = { }
+    handleOnShare: () -> Unit = { },
 ) {
 
     val isVideoPlaying = videoViewModel.isPlaying.collectAsState()
@@ -189,9 +192,20 @@ private fun ChooseFrameControls(
                 .fillMaxWidth()
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-
-            ) {
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Box {
+                IconButton(
+                    onClick = {
+                        videoViewModel.shiftVideoPosition(-33)
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.KeyboardDoubleArrowLeft,
+                        contentDescription = stringResource(R.string.seek_back)
+                    )
+                }
+            }
             Box {
                 IconButton(onClick = {
                     videoViewModel.setPlayState(!isVideoPlaying.value)
@@ -199,6 +213,16 @@ private fun ChooseFrameControls(
                     Icon(
                         if (!isVideoPlaying.value) Icons.Default.PlayArrow else Icons.Default.Pause,
                         contentDescription = stringResource(R.string.play_pause)
+                    )
+                }
+            }
+            Box {
+                IconButton(onClick = {
+                    videoViewModel.shiftVideoPosition(33)
+                }) {
+                    Icon(
+                        Icons.Default.KeyboardDoubleArrowRight,
+                        contentDescription = stringResource(R.string.seek_forward)
                     )
                 }
             }
@@ -215,7 +239,7 @@ private fun ChooseFrameControls(
 
 @Composable
 private fun PlayerWrapper(
-    videoViewModel: VideoViewModel
+    videoViewModel: VideoViewModel,
 ) {
     val videoPlayer = videoViewModel.player.collectAsState().value
     val isPlaying = videoViewModel.isPlaying.collectAsState().value

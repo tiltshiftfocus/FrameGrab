@@ -7,5 +7,7 @@
     <string name="pick_video">Pick a video</string>
     <string name="back_button">Back</string>
     <string name="play_pause">Play/Pause</string>
+    <string name="seek_back">Seek Back</string>
+    <string name="seek_forward">Seek Forward</string>
     <string name="export">Export</string>
 </resources>
