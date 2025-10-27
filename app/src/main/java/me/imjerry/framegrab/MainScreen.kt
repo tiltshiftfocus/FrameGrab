@@ -22,7 +22,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -116,7 +115,7 @@ fun FrameGrabApp(
             ) {
                 val window = (view.context as Activity).window
                 composable(route = FrameGrabScreen.Start.name) {
-                    window.navigationBarColor = currentScreen.navBarColor.toArgb()
+//                    window.navigationBarColor = currentScreen.navBarColor.toArgb()
                     SelectVideoScreen(
                         onVideoPicked = { uri ->
                             viewModel.setUri(context, uri)
@@ -126,7 +125,7 @@ fun FrameGrabApp(
                     )
                 }
                 composable(route = FrameGrabScreen.SelectFrame.name) {
-                    window.navigationBarColor = currentScreen.navBarColor.toArgb()
+//                    window.navigationBarColor = currentScreen.navBarColor.toArgb()
                     val currentUri = viewModel.currentUri.collectAsState()
                     if (currentUri.value != null) {
                         SelectFrameScreen(

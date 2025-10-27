@@ -10,4 +10,5 @@
     <string name="seek_back">Seek Back</string>
     <string name="seek_forward">Seek Forward</string>
     <string name="export">Export</string>
+    <string name="save_to_gallery">Save to Gallery</string>
 </resources>
