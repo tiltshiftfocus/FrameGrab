@@ -1,7 +1,7 @@
 package me.imjerry.framegrab
 
-import android.app.Activity
 import androidx.annotation.StringRes
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -91,7 +90,7 @@ fun FrameGrabApp(
         backStackEntry?.destination?.route ?: FrameGrabScreen.Start.name
     )
     val context = LocalContext.current
-    val view = LocalView.current
+//    val view = LocalView.current
 
     LoadingBox(appViewModel = appViewModel) {
         Scaffold(
@@ -111,9 +110,10 @@ fun FrameGrabApp(
                 navController = navController,
                 startDestination = FrameGrabScreen.Start.name,
                 modifier = Modifier.padding(innerPadding),
-                exitTransition = { ExitTransition.None },
+                exitTransition = { ExitTransition.KeepUntilTransitionsFinished },
+                enterTransition = { EnterTransition.None }
             ) {
-                val window = (view.context as Activity).window
+//                val window = (view.context as Activity).window
                 composable(route = FrameGrabScreen.Start.name) {
 //                    window.navigationBarColor = currentScreen.navBarColor.toArgb()
                     SelectVideoScreen(
