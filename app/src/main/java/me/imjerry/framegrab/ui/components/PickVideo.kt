@@ -2,7 +2,6 @@ package me.imjerry.framegrab.ui.components
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,15 +30,13 @@ import me.imjerry.framegrab.R
 fun PickVideo(
     onPickVideo: (Uri) -> Unit = {}
 ) {
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) {
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
         if (it != null)
             onPickVideo(it)
     }
 
     fun launchPicker() {
-        launcher.launch(
-            PickVisualMediaRequest(mediaType = ActivityResultContracts.PickVisualMedia.VideoOnly)
-        )
+        launcher.launch("video/*")
     }
 
     val mainColor: Color = MaterialTheme.colorScheme.inverseSurface
